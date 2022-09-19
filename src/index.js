@@ -1,30 +1,68 @@
 import './css/styles.css';
-import { fetchCoutries } from './fetchCountries.js'
-import debounce from 'lodash.debounce';
+import { fetchCountries } from './fetchCountries.js';
+let debounce = require('lodash.debounce');
 import Notiflix from 'notiflix';
+import 'notiflix/dist/notiflix-3.2.5.min.css';
 
 const DEBOUNCE_DELAY = 300;
 
-const countryName = document.querySelector('.search-box');
 const countryList = document.querySelector('.country-list');
-const countryCard = document.querySelector('.country-info');
+const countryName = document.querySelector('#search-box');
 
-countryName.addEventListener('input', debounce(onSearchCountry, DEBOUNCE_DELAY));
+countryName.addEventListener('input', debounce(onCountryName, DEBOUNCE_DELAY));
 
-function onSearchCountry(event) {
-    event.preventDefault();
-    searchCountry = event.terget.velue;
-    searchCountry = searchCountry.trim();
-    if (searchCountry !== '') {
-        fetchCoutries(searchCountry)
-            .then(renderCountryList)
-            .catch(error => {
-                renderCountryList('');
-                Notiflix.Notify.failure('Oops, there is no country with that name');
-            });
-    } else renderCountryList(searchCountry);
-};
+let searchCountryName = '';
+function onCountryName(event) {
+  searchCountryName = event.target.value;
+  searchCountryName = searchCountryName.trim();
+  if (searchCountryName !== '') {
+    fetchCountries(searchCountryName)
+      .then(renderCountryList)
+      .catch(error => {
+        renderCountryList('');
+        Notiflix.Notify.failure('Oops, there is no country with that name');
+      });
+  } else renderCountryList(searchCountryName);
+}
 
+function renderCountryList(users) {
+  if (users.length === 0) {
+    // Notiflix.Notify.warning('Enter letters from country name');
+    countryList.innerHTML = '';
+    return;
+  }
 
+  if (users.length > 10) {
+    Notiflix.Notify.info(
+      'Too many matches found. Please enter a more specific name.'
+    );
+    return;
+  }
 
- 
+  if (users.length > 1 && users.length <= 10) {
+    const markup = users
+      .map(user => {
+        return `<p class="country-title">
+        <img width="30" height="20" src="${user.flags.svg}" 
+            alt="Flags ${user.name.common} "> ${user.name.common}
+        </p>`;
+      })
+      .join('');
+    countryList.innerHTML = markup;
+  }
+
+  if (users.length === 1) {
+    Notiflix.Notify.success('One match found for your search');
+    const markup = users
+      .map(user => {
+        return `<p class="country-title">
+        <img width="30" height="20" src="${user.flags.svg}" 
+            alt="Flags ${user.name.common} "> ${user.name.common}
+        </p><p><b>Capital</b>: ${user.capital}</p>
+        <p><b>Population</b>: ${user.population}</p>
+        <p><b>Languages</b>: ${Object.values(user.languages).join(', ')}</p>`;
+      })
+      .join('');
+    countryList.innerHTML = markup;
+  }
+}
